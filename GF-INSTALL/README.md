@@ -33,8 +33,7 @@ A simple Bash script to **install `gf` (GitHub Finder)**, download custom templa
 1. Clone this repository:
 
 ```bash
-git clone https://github.com/INTELEON404/random-tips.git
-cd random-tips
+wget https://raw.githubusercontent.com/INTELEON404/random-tips/refs/heads/main/GF-INSTALL/gf.sh
 ````
 
 2. Make the installer executable:
