@@ -103,16 +103,3 @@ The script provides **color-coded messages**:
 ## License
 
 MIT License. See [LICENSE](LICENSE) for details.
-
-```
-
-This version is:
-
-- **Cleaner:** Less repetitive, clear headers, concise sentences.  
-- **Professional:** GitHub-friendly formatting.  
-- **Readable:** Focused on instructions, outputs, and usage.  
-
-I can also **add a “banner preview and script demo” section** showing the ASCII banner and colored messages—this makes it visually appealing for GitHub.  
-
-Do you want me to add that?
-```
