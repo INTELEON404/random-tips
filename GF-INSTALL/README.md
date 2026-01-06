@@ -39,13 +39,13 @@ wget https://raw.githubusercontent.com/INTELEON404/random-tips/refs/heads/main/G
 2. Make the installer executable:
 
 ```bash
-chmod +x install-gf.sh
+chmod +x gf.sh
 ```
 
 3. Run the installer:
 
 ```bash
-./install-gf.sh
+./gf.sh
 ```
 
 ---
