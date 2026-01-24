@@ -1,17 +1,18 @@
 #!/usr/bin/env bash
 #
-# UNIFINDER-X v4.3
-# Unified JS • ALL URLs • API • JSON • Secrets Recon Framework
+# UNIFINDER-X
 #
 
-set -euo pipefail
+set -uo pipefail
 
 # ===================== CONFIG =====================
 CONCURRENCY=50
 GO_BIN="$HOME/go/bin"
 export PATH="$PATH:$GO_BIN"
-TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-SESSION_DIR="unifinder_${TIMESTAMP}"
+MODE="all"
+SESSION_DIR=""
+TARGET=""
+LIST=""
 
 # ===================== UI =====================
 C_OK=$'\e[32m'
@@ -20,137 +21,148 @@ C_ERR=$'\e[31m'
 C_DIM=$'\e[2m'
 C_RST=$'\e[0m'
 
-header() {
-    echo -e "\n${C_ACT}UNIFINDER-X${C_RST} ${C_DIM}v4.3 | Unified Recon Engine${C_RST}"
-    echo -e "${C_DIM}------------------------------------------------${C_RST}"
-}
-
 log() { echo -e "${C_ACT}[*]${C_RST} $1"; }
 ok()  { echo -e "${C_OK}[+]${C_RST} $1"; }
 err() { echo -e "${C_ERR}[!]${C_RST} $1"; exit 1; }
 
+header() {
+    echo -e "${C_ACT}UNIFINDER-X${C_RST} ${C_DIM}v1.1 ${C_RST}"
+    echo -e "${C_DIM}------------------------------------------------------${C_RST}"
+}
+
+# ===================== HELP =====================
+usage() {
+    header
+    echo "Usage:"
+    echo "  $0 --setup                 Install all required Go tools"
+    echo "  $0 -u <url>                Scan a single target"
+    echo "  $0 -l <file>               Scan a list of targets"
+    echo "  $0 -o <dir>                Specify output directory (bypasses prompt)"
+    echo ""
+    echo "Modes (Optional):"
+    echo "  --urls-only, --js-only, --api-only, --json-only, --params-only, --secrets-only"
+    echo ""
+    echo "Example:"
+    echo "  $0 -u https://example.com -o my_recon --js-only"
+    exit 0
+}
+
 # ===================== SETUP =====================
 setup() {
-    log "Initializing environment & dependencies..."
-
+    header
+    log "Checking/Installing dependencies..."
+    mkdir -p "$GO_BIN"
     declare -A TOOLS=(
         [waybackurls]="github.com/tomnomnom/waybackurls@latest"
         [gau]="github.com/lc/gau/v2/cmd/gau@latest"
-        [urlfinder]="github.com/projectdiscovery/urlfinder/cmd/urlfinder@latest"
         [httpx]="github.com/projectdiscovery/httpx/cmd/httpx@latest"
         [katana]="github.com/projectdiscovery/katana/cmd/katana@latest"
         [subjs]="github.com/lc/subjs@latest"
-        [getJS]="github.com/003random/getJS@latest"
-        [cariddi]="github.com/edoardottt/cariddi/cmd/cariddi@latest"
+        [anew]="github.com/tomnomnom/anew@latest"
         [mantra]="github.com/Brosck/mantra@latest"
     )
 
     for tool in "${!TOOLS[@]}"; do
         if ! command -v "$tool" &>/dev/null; then
-            echo -ne "  > Installing $tool... "
+            log "Installing $tool..."
             go install "${TOOLS[$tool]}" &>/dev/null
-            echo "Done"
         fi
     done
-
-    ok "All tools installed."
-}
-
-# ===================== TARGET SCAN =====================
-scan_target() {
-    local TARGET="$1"
-    local SAFE_NAME
-    SAFE_NAME=$(echo "$TARGET" | sed 's|https\?://||;s|/||g')
-
-    local BASE="$SESSION_DIR/$SAFE_NAME"
-    mkdir -p "$BASE"/{raw,live,api,json,secrets,params}
-
-    RAW_URLS="$BASE/raw/all_urls.txt"
-    LIVE_URLS="$BASE/live/live_urls.txt"
-    PARAM_OUT="$BASE/params/param_urls.txt"
-
-    RAW_JS="$BASE/raw/all_js.txt"
-    LIVE_JS="$BASE/live/live_js.txt"
-
-    API_OUT="$BASE/api/api_endpoints.txt"
-    JSON_OUT="$BASE/json/json_endpoints.txt"
-    SECRET_OUT="$BASE/secrets/secrets.txt"
-
-    log "Scanning target: $TARGET"
-
-    # -------- ALL URLS (INCLUDING URLFINDER) --------
-    {
-        echo "$TARGET" | waybackurls
-        echo "$TARGET" | gau --subs
-        urlfinder -u "$TARGET" -silent
-        katana -u "$TARGET" -silent
-    } | sort -u > "$RAW_URLS"
-
-    ok "All URLs collected: $(wc -l < "$RAW_URLS")"
-
-    httpx -silent -mc 200 -t "$CONCURRENCY" -l "$RAW_URLS" -o "$LIVE_URLS"
-    ok "Live URLs: $(wc -l < "$LIVE_URLS")"
-
-    grep "=" "$LIVE_URLS" | sort -u > "$PARAM_OUT" || true
-
-    # -------- JS FILES --------
-    {
-        echo "$TARGET" | waybackurls | grep -Ei "\.js$"
-        echo "$TARGET" | gau --subs | grep -Ei "\.js$"
-        echo "$TARGET" | subjs
-        echo "$TARGET" | getJS --complete
-        echo "$TARGET" | cariddi -ext 7 | grep -Ei "\.js$"
-        katana -u "$TARGET" -jc -silent | grep -Ei "\.js$"
-    } | sort -u > "$RAW_JS"
-
-    httpx -silent -mc 200 -t "$CONCURRENCY" -l "$RAW_JS" -o "$LIVE_JS"
-
-    # -------- API / JSON --------
-    grep -Ei "api/|/v[0-9]+/|graphql|swagger|openapi|rest" \
-        "$LIVE_JS" | sort -u > "$API_OUT" || true
-
-    grep -Ei "\.json$|schema|openapi" \
-        "$LIVE_JS" | sort -u > "$JSON_OUT" || true
-
-    # -------- SECRETS --------
-    if command -v mantra &>/dev/null; then
-        mantra -u "$LIVE_JS" > "$SECRET_OUT" 2>/dev/null || true
-    fi
-
-    ok "Completed: $TARGET"
-}
-
-# ===================== ARG HANDLING =====================
-usage() {
-    echo "Usage:"
-    echo "  $0 --setup"
-    echo "  $0 -u <url>"
-    echo "  $0 -l <file>"
+    ok "All tools are ready."
     exit 0
 }
 
+# ===================== SCAN CORE =====================
+safe_grep() {
+    local pattern=$1
+    local input=$2
+    local output=$3
+    if [[ -s "$input" ]]; then
+        grep -Ei "$pattern" "$input" | anew "$output" &>/dev/null || true
+    fi
+}
+
+scan() {
+    local TARGET=$1
+    local SAFE=$(echo "$TARGET" | sed 's#https\?://##;s#[/:]#_#g')
+    local OUT="$SESSION_DIR/$SAFE"
+    mkdir -p "$OUT"
+
+    log "Starting Recon: $TARGET"
+    
+    URLS="$OUT/urls.txt"
+    JS="$OUT/js.txt"
+
+    # URL Discovery
+    if [[ "$MODE" =~ all|urls ]]; then
+        {
+            echo "$TARGET" | waybackurls
+            echo "$TARGET" | gau --subs --threads "$CONCURRENCY"
+            katana -u "$TARGET" -silent -nc
+        } | anew "$URLS" &>/dev/null
+        
+        if [[ -s "$URLS" ]]; then
+            httpx -l "$URLS" -silent -mc 200,301,302 -o "$URLS.tmp" &>/dev/null
+            [[ -f "$URLS.tmp" ]] && mv "$URLS.tmp" "$URLS"
+        fi
+    fi
+
+    # Asset Extraction
+    safe_grep "\.js($|\?)" "$URLS" "$JS"
+    safe_grep "api/|/v[0-9]+/|graphql" "$URLS" "$OUT/api.txt"
+    safe_grep "\.json($|\?)|swagger|schema" "$URLS" "$OUT/json.txt"
+    safe_grep "\?.*\=" "$URLS" "$OUT/params.txt"
+
+    # Secrets
+    if [[ ("$MODE" =~ all|secrets) && -s "$JS" ]]; then
+        log "Scanning JS for secrets..."
+        mantra -u "$JS" > "$OUT/secrets.txt" 2>/dev/null || true
+    fi
+
+    ok "Target $TARGET complete."
+}
+
+# ===================== LOGIC START =====================
+
+# 1. Parse Arguments First
 [[ $# -eq 0 ]] && usage
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --setup) setup ;;
+        -h|--help) usage ;;
+        -u) TARGET="$2"; shift 2 ;;
+        -l|--list) LIST="$2"; shift 2 ;;
+        -o|--output) SESSION_DIR="$2"; shift 2 ;;
+        --urls-only) MODE="urls"; shift ;;
+        --js-only) MODE="js"; shift ;;
+        --api-only) MODE="api"; shift ;;
+        --json-only) MODE="json"; shift ;;
+        --params-only) MODE="params"; shift ;;
+        --secrets-only) MODE="secrets"; shift ;;
+        *) shift ;;
+    esac
+done
+
+# 2. Output Directory Prompt (Only if not provided via -o)
+if [[ -z "$SESSION_DIR" ]]; then
+    header
+    read -rp "Enter output folder name: " SESSION_DIR
+    [[ -z "$SESSION_DIR" ]] && err "Output directory name is required."
+fi
 mkdir -p "$SESSION_DIR"
-header
 
-case "$1" in
-    --setup)
-        setup
-        ;;
-    -u)
-        [[ -z "${2:-}" ]] && err "URL required"
-        scan_target "$2"
-        ;;
-    -l)
-        [[ ! -f "${2:-}" ]] && err "File not found"
-        while read -r target; do
-            [[ -z "$target" ]] && continue
-            scan_target "$target"
-        done < "$2"
-        ;;
-    *)
-        usage
-        ;;
-esac
+# 3. Final Execution
+if [[ -n "$TARGET" ]]; then
+    scan "$TARGET"
+elif [[ -n "$LIST" ]]; then
+    [[ ! -f "$LIST" ]] && err "File $LIST not found."
+    while read -r line; do
+        [[ -z "$line" ]] && continue
+        scan "$line"
+    done < "$LIST"
+else
+    err "No target specified. Use -h for help."
+fi
 
-ok "Recon finished. Results saved in: $SESSION_DIR"
+ok "Workflow finished. Results saved in: $SESSION_DIR"
