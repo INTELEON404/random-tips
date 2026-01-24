@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
-# UNIFINDER-X v4.1
-# Unified JS • API • JSON • Endpoint Recon Framework
+# UNIFINDER-X v4.2
+# Unified JS • ALL URLs • API • JSON • Secrets Recon Framework
 #
 
 set -euo pipefail
@@ -21,7 +21,7 @@ C_DIM=$'\e[2m'
 C_RST=$'\e[0m'
 
 header() {
-    echo -e "\n${C_ACT}UNIFINDER-X${C_RST} ${C_DIM}v4.1 | Unified Recon Engine${C_RST}"
+    echo -e "\n${C_ACT}UNIFINDER-X${C_RST} ${C_DIM}v4.2 | Unified Recon Engine${C_RST}"
     echo -e "${C_DIM}------------------------------------------------${C_RST}"
 }
 
@@ -56,23 +56,41 @@ setup() {
     ok "All tools installed."
 }
 
-# ===================== SINGLE TARGET RECON =====================
+# ===================== TARGET SCAN =====================
 scan_target() {
     local TARGET="$1"
     local SAFE_NAME
     SAFE_NAME=$(echo "$TARGET" | sed 's|https\?://||;s|/||g')
 
     local BASE="$SESSION_DIR/$SAFE_NAME"
-    mkdir -p "$BASE"/{raw,live,api,json,secrets}
+    mkdir -p "$BASE"/{raw,live,api,json,secrets,params}
 
     RAW_JS="$BASE/raw/all_js.txt"
+    RAW_URLS="$BASE/raw/all_urls.txt"
     LIVE_JS="$BASE/live/live_js.txt"
+    LIVE_URLS="$BASE/live/live_urls.txt"
     API_OUT="$BASE/api/api_endpoints.txt"
     JSON_OUT="$BASE/json/json_endpoints.txt"
+    PARAM_OUT="$BASE/params/param_urls.txt"
     SECRET_OUT="$BASE/secrets/secrets.txt"
 
-    log "Scanning: $TARGET"
+    log "Scanning target: $TARGET"
 
+    # -------- ALL URLS --------
+    {
+        echo "$TARGET" | waybackurls
+        echo "$TARGET" | gau --subs
+        katana -u "$TARGET" -silent
+    } | sort -u > "$RAW_URLS"
+
+    ok "All URLs collected: $(wc -l < "$RAW_URLS")"
+
+    httpx -silent -mc 200 -t "$CONCURRENCY" -l "$RAW_URLS" -o "$LIVE_URLS"
+    ok "Live URLs: $(wc -l < "$LIVE_URLS")"
+
+    grep "=" "$LIVE_URLS" | sort -u > "$PARAM_OUT" || true
+
+    # -------- JS FILES --------
     {
         echo "$TARGET" | waybackurls | grep -Ei "\.js$"
         echo "$TARGET" | gau --subs | grep -Ei "\.js$"
@@ -82,17 +100,16 @@ scan_target() {
         katana -u "$TARGET" -jc -silent | grep -Ei "\.js$"
     } | sort -u > "$RAW_JS"
 
-    ok "Raw JS: $(wc -l < "$RAW_JS")"
-
     httpx -silent -mc 200 -t "$CONCURRENCY" -l "$RAW_JS" -o "$LIVE_JS"
-    ok "Live JS: $(wc -l < "$LIVE_JS")"
 
+    # -------- API / JSON --------
     grep -Ei "api/|/v[0-9]+/|graphql|swagger|openapi|rest" \
         "$LIVE_JS" | sort -u > "$API_OUT" || true
 
     grep -Ei "\.json$|schema|openapi" \
         "$LIVE_JS" | sort -u > "$JSON_OUT" || true
 
+    # -------- SECRETS --------
     if command -v mantra &>/dev/null; then
         mantra -u "$LIVE_JS" > "$SECRET_OUT" 2>/dev/null || true
     fi
@@ -110,7 +127,6 @@ usage() {
 }
 
 [[ $# -eq 0 ]] && usage
-
 mkdir -p "$SESSION_DIR"
 header
 
@@ -134,4 +150,4 @@ case "$1" in
         ;;
 esac
 
-ok "All recon tasks completed. Output: $SESSION_DIR"
+ok "Recon finished. Results saved in: $SESSION_DIR"
