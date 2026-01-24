@@ -1,8 +1,4 @@
 #!/usr/bin/env bash
-#
-# UNIFINDER-X v4.2
-# Unified JS • ALL URLs • API • JSON • Secrets Recon Framework
-#
 
 set -euo pipefail
 
