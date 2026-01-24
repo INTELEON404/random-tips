@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+#
+# UNIFINDER-X v4.3
+# Unified JS • ALL URLs • API • JSON • Secrets Recon Framework
+#
 
 set -euo pipefail
 
@@ -17,7 +21,7 @@ C_DIM=$'\e[2m'
 C_RST=$'\e[0m'
 
 header() {
-    echo -e "\n${C_ACT}UNIFINDER-X${C_RST} ${C_DIM}v4.2 | Unified Recon Engine${C_RST}"
+    echo -e "\n${C_ACT}UNIFINDER-X${C_RST} ${C_DIM}v4.3 | Unified Recon Engine${C_RST}"
     echo -e "${C_DIM}------------------------------------------------${C_RST}"
 }
 
@@ -32,12 +36,12 @@ setup() {
     declare -A TOOLS=(
         [waybackurls]="github.com/tomnomnom/waybackurls@latest"
         [gau]="github.com/lc/gau/v2/cmd/gau@latest"
+        [urlfinder]="github.com/projectdiscovery/urlfinder/cmd/urlfinder@latest"
         [httpx]="github.com/projectdiscovery/httpx/cmd/httpx@latest"
         [katana]="github.com/projectdiscovery/katana/cmd/katana@latest"
         [subjs]="github.com/lc/subjs@latest"
         [getJS]="github.com/003random/getJS@latest"
         [cariddi]="github.com/edoardottt/cariddi/cmd/cariddi@latest"
-        [anew]="github.com/tomnomnom/anew@latest"
         [mantra]="github.com/Brosck/mantra@latest"
     )
 
@@ -61,21 +65,24 @@ scan_target() {
     local BASE="$SESSION_DIR/$SAFE_NAME"
     mkdir -p "$BASE"/{raw,live,api,json,secrets,params}
 
-    RAW_JS="$BASE/raw/all_js.txt"
     RAW_URLS="$BASE/raw/all_urls.txt"
-    LIVE_JS="$BASE/live/live_js.txt"
     LIVE_URLS="$BASE/live/live_urls.txt"
+    PARAM_OUT="$BASE/params/param_urls.txt"
+
+    RAW_JS="$BASE/raw/all_js.txt"
+    LIVE_JS="$BASE/live/live_js.txt"
+
     API_OUT="$BASE/api/api_endpoints.txt"
     JSON_OUT="$BASE/json/json_endpoints.txt"
-    PARAM_OUT="$BASE/params/param_urls.txt"
     SECRET_OUT="$BASE/secrets/secrets.txt"
 
     log "Scanning target: $TARGET"
 
-    # -------- ALL URLS --------
+    # -------- ALL URLS (INCLUDING URLFINDER) --------
     {
         echo "$TARGET" | waybackurls
         echo "$TARGET" | gau --subs
+        urlfinder -u "$TARGET" -silent
         katana -u "$TARGET" -silent
     } | sort -u > "$RAW_URLS"
 
