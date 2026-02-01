@@ -56,7 +56,7 @@ chmod +x gf.sh
 * **Template Download**: Fetches templates from:
 
   ```
-  https://github.com/INTELEON404/AppStore/raw/refs/heads/main/gf.zip
+  https://github.com/LUXRAY404/AppStore/raw/refs/heads/main/gf.zip
   ```
 * **Extraction**: Extracted to `~/.gf`.
 * **Zsh Completion**: Adds `source <gf-completion>` to `~/.zshrc` if missing.
