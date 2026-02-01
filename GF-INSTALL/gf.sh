@@ -27,7 +27,7 @@ NC="\033[0m"
 #        Variables          #
 #---------------------------#
 GF_DIR="$HOME/.gf"
-GF_ZIP_URL="https://github.com/INTELEON404/AppStore/raw/refs/heads/main/gf.zip"
+GF_ZIP_URL="https://github.com/LUXRAY404/AppStore/raw/refs/heads/main/gf.zip"
 GF_ZIP_FILE="gf.zip"
 GF_COMPLETION="$HOME/go/pkg/mod/github.com/tomnomnom/gf@v0.0.0-20200618134122-dcd4c361f9f5/gf-completion.zsh"
 
