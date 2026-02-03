@@ -1,0 +1,49 @@
+{
+  // Themes and icons
+  "workbench.colorTheme": "Dracula",
+  "workbench.iconTheme": "vs-seti",
+
+  // Code editor fontট
+  "editor.fontFamily": "Dank Mono, monospace",
+  "editor.fontLigatures": true,
+  "editor.fontSize": 16,
+  "editor.lineHeight": 20,
+  "editor.letterSpacing": 0.3,
+  "editor.cursorBlinking": "blink",
+  "editor.cursorSmoothCaretAnimation": true,
+  "editor.cursorStyle": "line",
+  "editor.renderWhitespace": "all",
+  "editor.renderControlCharacters": true,
+  "editor.renderIndentGuides": true,
+  "editor.minimap.enabled": false,
+  "editor.wordWrap": "on",
+  "editor.tabSize": 4,
+  "editor.detectIndentation": true,
+  "editor.matchBrackets": "always",
+  "editor.guides.bracketPairs": true,
+
+  // Terminal Font
+  "terminal.integrated.fontFamily": "Dank Mono, monospace",
+  "terminal.integrated.fontSize": 14,
+  "terminal.integrated.cursorBlinking": true,
+  "terminal.integrated.scrollback": 10000,
+
+  // UI And general settings
+  "window.zoomLevel": 0.7,
+  "workbench.activityBar.visible": true,
+  "workbench.statusBar.visible": true,
+  "workbench.editor.showTabs": true,
+  "workbench.sideBar.location": "left",
+  "editor.smoothScrolling": true,
+  "explorer.confirmDelete": false,
+  "breadcrumbs.enabled": true,
+
+  // Bracket color & guides
+  "editor.bracketPairColorization.enabled": true,
+  "editor.guides.bracketPairs": true,
+
+  // Selection & highlight
+  "editor.selectionHighlight": true,
+  "editor.occurrencesHighlight": true,
+  "editor.find.seedSearchStringFromSelection": true
+}
